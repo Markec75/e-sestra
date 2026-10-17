@@ -1,0 +1,1220 @@
+<!doctype html>
+<html lang="sl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Koncept za zVEM / zVEM+ – prototip</title>
+<meta name="description" content="Klikabilni prototip: digitalni asistent med telefonskim klicem izpolni zahtevo, medicinska sestra jo preveri in potrdi. Vsi podatki so izmišljeni.">
+<link rel="icon" href="data:,">
+<style>
+:root{
+  --bg:#eef2f4; --surface:#fff; --surface-2:#f6f8f9;
+  --ink:#0e1d22; --ink-2:#33454b; --muted:#56676d; --ph:#66777c;
+  --line:#d3dce0; --line-2:#e5ebee;
+  --teal:#0a7d77; --teal-ink:#06615c; --teal-soft:#e2f4f2; --teal-soft-2:#c8ebe7;
+  --nurse:#1d3f8f; --nurse-bg:#e8eefc; --nurse-line:#9db3ea;
+  --warn-bg:#fff3c4; --warn-line:#d79b00; --warn-ink:#5e4300;
+  --red-bg:#fdecec; --red-ink:#a11a1a; --red-line:#f1b8b8;
+  --green:#157a41;
+  --radius:.75rem;
+  --shadow:0 1px 2px rgba(14,29,34,.06),0 4px 16px rgba(14,29,34,.06);
+  --font:"Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html{font-size:clamp(13px,min(1.1vw,2vh),24px)}
+html,body{height:100%;margin:0}
+body{font-family:var(--font);color:var(--ink);background:var(--bg);display:flex;flex-direction:column;overflow:hidden;line-height:1.35}
+[hidden]{display:none!important}
+svg{width:1em;height:1em;flex:none;vertical-align:-.12em}
+button,select,input{font:inherit;color:inherit}
+h2,h3,p{margin:0}
+:focus-visible{outline:3px solid #1b6fd1;outline-offset:2px}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* ---------- Zaglavje ---------- */
+.top{flex:none;height:3.2rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:0 1.2rem;background:var(--surface);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:.6rem;font-size:1.05rem}
+.brand-mark{width:1.1rem;height:1.1rem;border-radius:.3rem;background:var(--teal)}
+.brand span.light{color:var(--muted)}
+.top-right{display:flex;align-items:center;gap:.9rem}
+.saved{display:flex;align-items:center;gap:.4rem;background:var(--teal-soft);color:var(--teal-ink);border:1px solid var(--teal-soft-2);padding:.3rem .75rem;border-radius:999px;font-size:.9rem;font-weight:600;animation:pop .5s ease-out}
+.auto-badge{font-size:.72rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#fff;background:var(--ink-2);padding:.25rem .55rem;border-radius:.35rem}
+.switch{display:flex;align-items:center;gap:.6rem;background:var(--surface-2);border:2px solid var(--line);border-radius:999px;padding:.3rem .9rem .3rem .35rem;cursor:pointer;font-weight:600;font-size:.92rem}
+.switch-track{width:2.6rem;height:1.45rem;border-radius:999px;background:#8d9ca1;position:relative;transition:background .2s}
+.switch-thumb{position:absolute;top:.15rem;left:.15rem;width:1.15rem;height:1.15rem;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:transform .2s}
+.switch[aria-checked="true"]{border-color:var(--teal);background:var(--teal-soft);color:var(--teal-ink)}
+.switch[aria-checked="true"] .switch-track{background:var(--teal)}
+.switch[aria-checked="true"] .switch-thumb{transform:translateX(1.15rem)}
+
+/* ---------- Oder ---------- */
+.stage{flex:1;min-height:0;display:grid;grid-template-columns:65fr 35fr;gap:1rem;padding:.8rem 1rem}
+.nurse{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.app-bar{flex:none;height:2.6rem;display:flex;align-items:center;justify-content:space-between;padding:0 1rem;background:var(--teal-ink);color:#fff;font-size:.95rem}
+.app-bar small{font-size:.8rem;opacity:.9}
+.nurse-body{flex:1;min-height:0;display:flex;flex-direction:column;gap:.8rem;padding:.9rem}
+
+/* Dohodni klic / potrditev */
+.callbar{flex:none;display:flex;align-items:center;gap:1rem;padding:.85rem 1.1rem;border-radius:var(--radius);border:2px solid var(--teal);background:var(--teal-soft);animation:fadeUp .35s}
+.callbar.confirmed{border-color:var(--teal-soft-2);background:var(--surface-2)}
+.ring{width:3rem;height:3rem;border-radius:50%;background:var(--teal);color:#fff;display:grid;place-items:center;font-size:1.35rem;position:relative;flex:none}
+.callbar.incoming .ring::after{content:"";position:absolute;inset:0;border-radius:50%;border:3px solid var(--teal);animation:ring 1.4s infinite}
+.cb-text{flex:1;min-width:0}
+.cb-title{font-weight:700;font-size:1.15rem}
+.cb-sub{color:var(--ink-2);font-size:.88rem}
+.btn-primary{background:var(--teal);color:#fff;border:0;border-radius:.6rem;padding:.75rem 1.5rem;font-size:1.1rem;font-weight:700;cursor:pointer;display:inline-flex;gap:.5rem;align-items:center}
+.btn-primary:hover{background:var(--teal-ink)}
+
+/* Delovni prostor klica */
+.workspace{flex:1;min-height:0;display:grid;grid-template-columns:.92fr 1.08fr;gap:.9rem;animation:fadeUp .35s}
+.col{border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);display:flex;flex-direction:column;min-height:0;position:relative;overflow:hidden}
+.col-head{display:flex;align-items:center;justify-content:space-between;gap:.5rem;padding:.65rem .9rem .15rem}
+.col-head h2{font-size:1.1rem}
+.col-sub{padding:0 .9rem .55rem;font-size:.76rem;color:var(--muted);border-bottom:1px solid var(--line-2)}
+.call-state{display:inline-flex;align-items:center;gap:.4rem;font-size:.76rem;font-weight:700;padding:.2rem .6rem;border-radius:999px;white-space:nowrap}
+.call-state.live{background:#e5f6ec;color:#11683a}
+.call-state .dot{width:.55rem;height:.55rem;border-radius:50%;background:#1f9d55;animation:blink 1s infinite}
+.call-state.ended{background:var(--surface-2);color:var(--muted);border:1px solid var(--line)}
+
+.convo{flex:1;min-height:0;overflow-y:auto;padding:.75rem .9rem;display:flex;flex-direction:column;gap:.5rem}
+.msg{max-width:92%;display:flex;flex-direction:column;animation:fadeUp .25s}
+.msg .who{font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:0 .3rem .12rem}
+.bubble{padding:.42rem .7rem;border-radius:.8rem;font-size:.92rem;line-height:1.32;min-height:1.9rem}
+.msg.pacient{align-self:flex-start}
+.msg.pacient .bubble{background:#edf1f3;border-top-left-radius:.2rem}
+.msg.sestra{align-self:flex-end;align-items:flex-end}
+.msg.sestra .bubble{background:var(--teal-soft);border-top-right-radius:.2rem}
+.bubble.typing::after{content:"";display:inline-block;width:.45em;height:1em;background:currentColor;margin-left:.1em;vertical-align:-.15em;animation:blink .8s steps(1) infinite}
+.fill-tag{margin:.22rem .3rem 0;font-size:.7rem;font-weight:700;color:var(--teal-ink);display:flex;gap:.3rem;align-items:center;animation:fadeUp .3s}
+
+/* Obrazec */
+.draft-pill{font-size:.7rem;font-weight:700;padding:.18rem .55rem;border-radius:.35rem;background:var(--surface-2);color:var(--ink-2);border:1px solid var(--line);white-space:nowrap}
+.draft-pill.ok{background:var(--teal);color:#fff;border-color:var(--teal)}
+.form-grid{flex:1;min-height:0;overflow-y:auto;padding:.5rem .9rem;display:grid;grid-template-columns:1fr 1fr;gap:.35rem .7rem;align-content:start}
+.field{min-width:0}
+.field.full{grid-column:1/-1}
+.f-head{display:flex;align-items:center;justify-content:space-between;gap:.4rem;margin-bottom:.18rem;min-height:1.2rem}
+.f-label{font-size:.78rem;font-weight:700;color:var(--ink-2)}
+.f-label{min-width:0}
+.chips{display:flex;gap:.3rem;flex-wrap:nowrap;flex:none}
+.chip{display:inline-flex;align-items:center;gap:.25rem;font-size:.64rem;font-weight:700;padding:.12rem .45rem;border-radius:999px;white-space:nowrap;animation:fadeIn .3s}
+.chip.ai{background:var(--teal-soft);color:var(--teal-ink)}
+.chip.warn{background:var(--warn-bg);color:var(--warn-ink);border:1px solid var(--warn-line)}
+.chip.rn{background:var(--nurse-bg);color:var(--nurse)}
+.chip.lock{background:var(--surface-2);color:var(--ink-2);border:1px dashed #7d8d92}
+.f-val{display:block;width:100%;min-height:2rem;padding:.3rem .65rem;border:1.5px dashed var(--line);border-radius:.5rem;background:var(--surface-2);font-size:.95rem;color:var(--ink);line-height:1.3;transition:background .3s,border-color .3s}
+.f-val:empty::before{content:attr(data-ph);color:var(--ph);font-style:italic;font-size:.82rem}
+input.f-val::placeholder{color:var(--ph);font-style:italic;font-size:.82rem;opacity:1}
+input.f-val[readonly]{cursor:default}
+.field.filled .f-val{border-style:solid;border-color:#a9d9d3;background:#f4fbfa;font-weight:600}
+.field.warn .f-val{border:2px solid var(--warn-line);background:var(--warn-bg)}
+.field.edited .f-val{border-color:var(--nurse-line);background:#f3f6fe}
+.field.route .f-val{border-left:5px solid var(--teal)}
+.f-note{font-size:.7rem;color:var(--muted);margin-top:.12rem;min-height:.92rem;line-height:1.3}
+.field.warn .f-note{color:var(--warn-ink);font-weight:700}
+.field.flash .f-val{animation:flash 1.3s ease-out}
+.field.warn.flash .f-val{animation:flashWarn 1.3s ease-out}
+.field.focus .f-val,.field.focus select{outline:3px solid #1b6fd1;outline-offset:2px}
+
+.form-foot{flex:none;display:grid;grid-template-columns:1fr 1fr;gap:.8rem;align-items:end;padding:.65rem .9rem .75rem;border-top:1px solid var(--line-2);background:var(--surface-2)}
+.prio select{display:block;width:100%;min-height:2.6rem;font-size:1rem;font-weight:600;padding:.35rem .6rem;border:2px dashed #7d8d92;border-radius:.5rem;background:#fff;cursor:pointer}
+.field.prio.chosen select{border-style:solid;border-color:var(--nurse-line);background:#f3f6fe;color:var(--nurse)}
+.field.prio.flash select{animation:flash 1.3s ease-out}
+.btn-confirm{width:100%;min-height:3.1rem;font-size:1.15rem;font-weight:800;border:0;border-radius:.6rem;background:var(--teal);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:.5rem;transition:transform .12s,background .2s}
+.btn-confirm:disabled{background:#c5cfd2;color:#3f4f54;cursor:not-allowed}
+.btn-confirm.ready{animation:readyPulse 1.6s infinite}
+.btn-confirm.pressed{transform:scale(.96);background:var(--teal-ink);color:#fff;animation:none}
+.confirm-hint{font-size:.72rem;color:var(--muted);margin-top:.3rem;text-align:center;min-height:.95rem}
+.stamp{position:absolute;inset:0;display:grid;place-items:center;background:rgba(255,255,255,.85);opacity:0;pointer-events:none;transition:opacity .3s;z-index:3}
+.stamp span{display:flex;align-items:center;gap:.5rem;font-size:1.7rem;font-weight:800;color:var(--teal-ink);border:4px solid var(--teal);border-radius:.8rem;padding:.6rem 1.3rem;transform:rotate(-4deg) scale(.85);transition:transform .35s cubic-bezier(.2,1.4,.4,1)}
+.form-col.confirmed .stamp{opacity:1}
+.form-col.confirmed .stamp span{transform:rotate(-4deg) scale(1)}
+
+/* Čakalna vrsta */
+.queue{flex:1;min-height:0;display:flex;flex-direction:column;animation:fadeUp .35s}
+.q-head{display:flex;align-items:baseline;gap:.7rem;margin-bottom:.5rem;flex-wrap:wrap}
+.q-head h2{font-size:1.2rem}
+.q-count{font-size:.78rem;font-weight:700;background:var(--surface-2);border:1px solid var(--line);padding:.1rem .55rem;border-radius:999px}
+.q-sub{font-size:.8rem;color:var(--muted);margin-left:auto}
+.q-table{border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+.q-row{display:grid;grid-template-columns:4.2rem minmax(0,1fr) 8.2rem 7rem 7rem 6.6rem;gap:.6rem;align-items:center;padding:.6rem .9rem;border-top:1px solid var(--line-2);font-size:.92rem}
+.q-th{border-top:0;background:var(--surface-2);font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);padding:.45rem .9rem}
+.q-name{min-width:0}
+.q-name b{display:block}
+.q-name small{display:block;color:var(--muted);font-size:.78rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.q-time{font-variant-numeric:tabular-nums;color:var(--ink-2);font-weight:600}
+.q-status{font-size:.85rem;color:var(--ink-2)}
+.q-status.done{color:var(--teal-ink);font-weight:700}
+.src{display:inline-flex;align-items:center;gap:.3rem;font-size:.78rem;font-weight:700;padding:.2rem .6rem;border-radius:999px}
+.src.zvem{background:#eef1f3;color:var(--ink-2);border:1px solid var(--line)}
+.src.tel{background:var(--teal);color:#fff}
+.prio-b{font-size:.8rem;font-weight:700;padding:.15rem .5rem;border-radius:.35rem}
+.prio-b.p-obi{background:#eef1f3;color:var(--ink-2)}
+.prio-b.p-dan{background:var(--warn-bg);color:var(--warn-ink)}
+.prio-b.p-nuj{background:var(--red-bg);color:var(--red-ink)}
+.q-row.row-new{background:#f2faf9;box-shadow:inset 5px 0 0 var(--teal);animation:rowIn .7s ease-out,rowGlow 5s ease-out}
+
+.flow{list-style:none;margin:auto 0 0;padding:.7rem .8rem;display:flex;gap:.4rem;align-items:center;border:1px dashed var(--line);border-radius:var(--radius);background:var(--surface-2)}
+.flow li{flex:1;display:flex;align-items:center;gap:.45rem;font-size:.8rem;font-weight:600;color:var(--ink-2)}
+.flow li+li::before{content:"→";color:var(--teal);font-weight:800;margin-right:.1rem}
+.flow b{width:1.5rem;height:1.5rem;border-radius:50%;background:var(--teal);color:#fff;display:grid;place-items:center;font-size:.75rem;flex:none}
+.flow-title{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:auto 0 .3rem}
+.flow-title+.flow{margin-top:0}
+
+/* ---------- Telefon ---------- */
+.patient{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:0;gap:.45rem}
+.phone-cap{font-size:.76rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.phone{height:calc(100% - 1.6rem);max-height:44rem;aspect-ratio:9/18.6;max-width:100%;background:#162024;border-radius:2.4rem;padding:.55rem;box-shadow:0 10px 30px rgba(14,29,34,.25),inset 0 0 0 2px #2c3a3f}
+.screen{height:100%;width:100%;border-radius:1.9rem;background:var(--surface-2);overflow:hidden;position:relative;display:flex;flex-direction:column;font-size:.86rem}
+.p-status{flex:none;height:1.9rem;display:flex;align-items:center;justify-content:space-between;padding:0 1.1rem;font-size:.72rem;font-weight:700;background:#fff}
+.p-time{display:inline-flex;align-items:center;gap:.25rem;padding:.05rem .45rem;border-radius:999px;min-width:2.6rem;justify-content:center}
+.p-time.call{background:var(--green);color:#fff}
+.notch{width:4.2rem;height:1.05rem;background:#162024;border-radius:999px}
+.p-icons{display:inline-flex;align-items:center;min-width:2.6rem;justify-content:flex-end}
+.sig{display:inline-flex;align-items:flex-end;gap:1.5px;height:.62rem;margin-right:.35rem}
+.sig i{width:2.5px;background:currentColor;border-radius:1px}
+.sig i:nth-child(1){height:30%}.sig i:nth-child(2){height:55%}.sig i:nth-child(3){height:80%}.sig i:nth-child(4){height:100%}
+.batt{display:inline-block;width:1.3rem;height:.62rem;border:1.5px solid currentColor;border-radius:.18rem;position:relative}
+.batt::after{content:"";position:absolute;top:1px;left:1px;bottom:1px;right:30%;background:currentColor;border-radius:1px}
+.p-appbar{flex:none;display:flex;align-items:center;justify-content:space-between;padding:.55rem 1rem;background:#fff;border-bottom:1px solid var(--line-2)}
+.p-app{font-weight:800;font-size:.95rem;color:var(--teal-ink)}
+.p-avatar{width:1.8rem;height:1.8rem;border-radius:50%;background:var(--teal-soft);color:var(--teal-ink);display:grid;place-items:center;font-size:.66rem;font-weight:800}
+.p-content{flex:1;min-height:0;position:relative;overflow:hidden}
+.p-view{position:absolute;inset:0;overflow-y:auto;padding:.9rem}
+.p-detail{background:var(--surface-2);transform:translateX(105%);transition:transform .45s cubic-bezier(.2,.8,.2,1);visibility:hidden}
+.p-detail.open{transform:none;visibility:visible}
+.p-hello{font-size:1.12rem;font-weight:700;margin-bottom:.7rem}
+.p-contact{background:#fff;border:1px solid var(--line);border-radius:.8rem;padding:.6rem .75rem;margin-bottom:1rem;display:flex;flex-direction:column;gap:.1rem}
+.p-contact.flash{animation:flash 1.3s ease-out}
+.p-cl{font-size:.68rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.p-h{font-size:.95rem;margin-bottom:.5rem}
+.p-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.5rem}
+.p-item{background:#fff;border:1px solid var(--line);border-radius:.8rem;padding:.6rem .75rem;display:flex;justify-content:space-between;align-items:center;gap:.5rem}
+.p-item b{display:block;font-size:.85rem}
+.p-item small{color:var(--muted);font-size:.72rem}
+.p-item.new{border:2px solid var(--teal);animation:rowIn .6s ease-out;cursor:pointer}
+.p-st{font-size:.66rem;font-weight:700;padding:.15rem .5rem;border-radius:999px;white-space:nowrap}
+.p-st.closed{background:#eef1f3;color:var(--ink-2)}
+.p-st.recv{background:var(--teal-soft);color:var(--teal-ink)}
+.p-st.ready{background:var(--teal);color:#fff}
+.p-112{flex:none;display:flex;align-items:center;gap:.5rem;padding:.65rem 1rem 1rem;background:var(--red-bg);color:var(--red-ink);border-top:1px solid var(--red-line);font-size:.8rem;font-weight:600}
+.p-112 svg{font-size:1.1rem}
+.p-push{position:absolute;top:.45rem;left:.45rem;right:.45rem;z-index:5;display:flex;gap:.6rem;align-items:center;padding:.65rem .75rem;background:rgba(255,255,255,.98);border-radius:1rem;box-shadow:0 8px 24px rgba(14,29,34,.28);transform:translateY(-150%);transition:transform .45s cubic-bezier(.2,.8,.2,1)}
+.p-push.show{transform:none}
+.p-push-icon{width:2rem;height:2rem;border-radius:.55rem;background:var(--teal);color:#fff;display:grid;place-items:center;font-size:1.1rem;flex:none}
+.p-push small{display:block;font-size:.64rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.p-push b{font-size:.85rem}
+.p-back{background:none;border:0;color:var(--teal-ink);font-weight:700;padding:.1rem 0 .6rem;cursor:pointer;font-size:.82rem}
+.p-card{background:#fff;border:1px solid var(--line);border-radius:.9rem;padding:.8rem .85rem;margin-bottom:.9rem}
+.p-card-top{display:flex;justify-content:space-between;align-items:center;gap:.4rem}
+.p-card h3{font-size:.98rem}
+.p-big{font-size:1.2rem;font-weight:800;margin:.3rem 0 .5rem;color:var(--teal-ink)}
+.p-dl{margin:0;display:flex;flex-direction:column;gap:.35rem}
+.p-dl dt{font-size:.64rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.p-dl dd{margin:0;font-size:.82rem;font-weight:600}
+.p-steps{list-style:none;margin:0;padding:0 0 0 .2rem}
+.p-steps li{position:relative;padding:0 0 1rem 2.1rem;color:var(--muted)}
+.p-steps li::before{content:"";position:absolute;left:0;top:0;width:1.35rem;height:1.35rem;border-radius:50%;border:2px solid #a0aeb2;background:#fff;display:grid;place-items:center;color:#fff;font-size:.78rem;font-weight:800}
+.p-steps li::after{content:"";position:absolute;left:.6rem;top:1.45rem;bottom:.1rem;width:2px;background:#cbd5d8}
+.p-steps li:last-child{padding-bottom:0}
+.p-steps li:last-child::after{display:none}
+.p-steps b{display:block;font-size:.88rem;color:var(--ink-2)}
+.p-steps small{font-size:.72rem}
+.p-steps li.done::before{content:"✓";background:var(--teal);border-color:var(--teal)}
+.p-steps li.done::after{background:var(--teal)}
+.p-steps li.active::before{border-color:var(--teal);animation:pulseRing 1.4s infinite}
+.p-steps li.active b{color:var(--teal-ink)}
+.p-steps li.final{animation:fadeIn .4s}
+.p-steps li.final b{color:var(--teal-ink);font-size:.95rem}
+
+/* ---------- Noga ---------- */
+.foot{flex:none;height:2rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:0 1rem;background:var(--surface);border-top:1px solid var(--line);font-size:.8rem}
+.disc{font-weight:700;color:var(--ink-2)}
+.keys{display:flex;gap:.75rem;align-items:center;background:rgba(14,29,34,.9);color:#fff;font-size:.66rem;border-radius:.45rem;padding:.2rem .65rem;white-space:nowrap}
+.keys kbd{font:inherit;font-weight:700;background:rgba(255,255,255,.2);border-radius:.25rem;padding:0 .3rem}
+.keys .k-step{color:#9fe3dc;font-weight:700}
+.keys.nudge{animation:nudge .45s}
+
+/* Digitalni asistent: vklop po soglasju */
+.ai-panel{margin:.55rem .9rem 0;padding:.55rem .7rem;border:2px dashed #7d8d92;border-radius:.6rem;background:var(--surface-2);display:flex;flex-direction:column;gap:.4rem}
+.ai-panel.on{border-style:solid;border-color:var(--teal);background:var(--teal-soft)}
+.ai-panel.flash{animation:flash 1.3s ease-out}
+.ai-row{display:flex;align-items:center;justify-content:space-between;gap:.5rem}
+.ai-title{font-weight:700;font-size:.9rem;display:flex;gap:.4rem;align-items:center}
+.ai-pill{font-size:.66rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;padding:.14rem .55rem;border-radius:999px;background:#56676d;color:#fff}
+.ai-panel.on .ai-pill{background:var(--teal)}
+.ai-text{font-size:.76rem;color:var(--ink-2);line-height:1.3}
+.ai-btns{display:flex;gap:.5rem}
+.btn-ai{flex:1;min-height:2.4rem;border:0;border-radius:.5rem;background:var(--teal);color:#fff;font-weight:800;font-size:.92rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:.45rem;transition:transform .12s}
+.btn-ai:disabled{background:#c5cfd2;color:#3f4f54;cursor:not-allowed}
+.btn-ai.ready{animation:readyPulse 1.6s infinite}
+.btn-ai.pressed{transform:scale(.96);background:var(--teal-ink);color:#fff;animation:none}
+.btn-ghost{background:#fff;border:1.5px solid var(--line);border-radius:.5rem;padding:.4rem .8rem;font-weight:700;font-size:.8rem;color:var(--ink-2);cursor:pointer}
+.btn-ghost:hover{border-color:#8d9ca1}
+.msg.off .bubble{background:#fff;border:1.5px dashed #a0aeb2;color:var(--ink-2)}
+.off-tag{margin:.18rem .3rem 0;font-size:.64rem;font-weight:700;color:var(--muted);display:flex;gap:.25rem;align-items:center}
+.msg.sestra .off-tag{justify-content:flex-end}
+.ai-divider{align-self:stretch;display:flex;align-items:center;gap:.5rem;font-size:.7rem;font-weight:800;color:var(--teal-ink);margin:.2rem 0;animation:fadeIn .4s}
+.ai-divider::before,.ai-divider::after{content:"";flex:1;height:2px;background:var(--teal-soft-2)}
+.ai-divider span{display:flex;gap:.3rem;align-items:center;white-space:nowrap}
+
+/* Vidna pravila */
+.rule{display:flex;gap:.45rem;align-items:flex-start;margin-top:.4rem;padding:.42rem .6rem;border-radius:.45rem;font-size:.76rem;line-height:1.3}
+.rule svg{font-size:1.05rem;margin-top:.02rem}
+.rule-nurse{background:var(--nurse-bg);color:var(--nurse);border-left:4px solid var(--nurse)}
+.rule-safe{margin:0 0 .4rem;align-items:center;background:var(--teal-ink);color:#fff;font-size:.82rem}
+.form-foot{align-items:stretch}
+.confirm-wrap{display:flex;flex-direction:column;justify-content:flex-end}
+
+/* Varnostni pregled */
+.modal-back{position:absolute;inset:0;z-index:10;background:rgba(14,29,34,.5);display:grid;place-items:center;padding:1rem;animation:fadeIn .25s}
+.modal{width:min(36rem,100%);max-height:100%;overflow-y:auto;background:var(--surface);border-radius:1rem;box-shadow:0 20px 50px rgba(14,29,34,.35);padding:1.1rem 1.2rem;display:flex;flex-direction:column;gap:.7rem;animation:fadeUp .3s;outline:none}
+.m-head{display:flex;gap:.8rem;align-items:flex-start}
+.m-icon{width:2.6rem;height:2.6rem;border-radius:.7rem;background:var(--teal-soft);color:var(--teal-ink);display:grid;place-items:center;font-size:1.5rem;flex:none}
+.m-head h2{font-size:1.2rem;margin-bottom:.2rem}
+.m-head p{font-size:.84rem;color:var(--ink-2)}
+.m-sum{border:1px solid var(--line);border-radius:.6rem;overflow:hidden}
+.m-row{display:grid;grid-template-columns:7.5rem minmax(0,1fr) auto;gap:.6rem;align-items:center;padding:.36rem .7rem;border-top:1px solid var(--line-2);font-size:.86rem}
+.m-row:first-child{border-top:0}
+.m-l{font-size:.74rem;font-weight:700;color:var(--muted)}
+.m-v{font-weight:600}
+.m-row.m-warn{background:var(--warn-bg)}
+.m-check{display:flex;gap:.6rem;align-items:center;padding:.6rem .75rem;border:2px solid var(--line);border-radius:.6rem;font-weight:700;cursor:pointer;background:var(--surface-2)}
+.m-check input{width:1.3rem;height:1.3rem;accent-color:var(--teal);flex:none;cursor:pointer}
+.m-check.flash{animation:flash 1.3s ease-out}
+.m-check.focus{outline:3px solid #1b6fd1;outline-offset:2px}
+.m-q{font-size:.95rem;font-weight:700}
+.m-btns{display:grid;grid-template-columns:auto 1fr;gap:.7rem}
+.m-btns .btn-ghost{font-size:.9rem;padding:.5rem 1rem}
+
+/* ---------- Animacije ---------- */
+@keyframes fadeUp{from{opacity:0;transform:translateY(.5rem)}to{opacity:1;transform:none}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes blink{50%{opacity:0}}
+@keyframes ring{from{transform:scale(1);opacity:.8}to{transform:scale(1.6);opacity:0}}
+@keyframes pop{0%{transform:scale(.6);opacity:0}70%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}
+@keyframes flash{0%{box-shadow:0 0 0 4px rgba(10,125,119,.45);background:#c9eee9}100%{box-shadow:0 0 0 0 rgba(10,125,119,0)}}
+@keyframes flashWarn{0%{box-shadow:0 0 0 4px rgba(215,155,0,.55)}100%{box-shadow:0 0 0 0 rgba(215,155,0,0)}}
+@keyframes readyPulse{0%,100%{box-shadow:0 0 0 0 rgba(10,125,119,.5)}50%{box-shadow:0 0 0 .4rem rgba(10,125,119,0)}}
+@keyframes pulseRing{0%,100%{box-shadow:0 0 0 0 rgba(10,125,119,.45)}50%{box-shadow:0 0 0 .35rem rgba(10,125,119,0)}}
+@keyframes rowIn{from{opacity:0;transform:translateY(-1.2rem)}to{opacity:1;transform:none}}
+@keyframes rowGlow{0%{background:var(--teal-soft-2)}100%{background:#f2faf9}}
+@keyframes nudge{25%{transform:translateX(-.3rem)}75%{transform:translateX(.3rem)}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+
+/* Gumbi v nogi (miška) in kontrole za dotik */
+.keys button{background:none;border:0;padding:0;color:inherit;font:inherit;cursor:pointer;white-space:nowrap}
+.keys button:hover{color:#9fe3dc}
+.mtabs,.touch{display:none}
+.t-btn{border:1.5px solid var(--line);border-radius:.5rem;background:#fff;font-weight:700;cursor:pointer;touch-action:manipulation;white-space:nowrap}
+.t-next{background:var(--teal);border-color:var(--teal);color:#fff}
+.t-next.nudge{animation:nudge .45s}
+
+/* Tablica (dotik, širok zaslon): namizna postavitev + gumbi v nogi */
+@media (pointer:coarse) and (min-width:901px){
+  .keys{display:none}
+  .touch{display:flex;align-items:center;gap:.7rem}
+  .t-hint{margin:0;font-size:.72rem;color:var(--ink-2)}
+  .t-btns{display:flex;gap:.4rem}
+  .t-btn{font-size:.75rem;padding:.12rem .7rem}
+}
+
+/* Telefon: zavihka Sestra / Pacientka in fiksna vrstica z gumbi */
+@media (max-width:900px){
+  html{font-size:15px}
+  html,body{height:auto}
+  body{display:block;overflow:visible;padding-bottom:8.5rem}
+  .top{height:auto;flex-wrap:wrap;padding:.6rem .8rem;gap:.5rem}
+  .brand{font-size:.95rem}
+  .top-right{flex-wrap:wrap;gap:.5rem}
+  .switch{font-size:.8rem}
+  .saved{font-size:.78rem}
+  .mtabs{display:flex;position:sticky;top:0;z-index:30;gap:.4rem;padding:.4rem .6rem;background:var(--surface);border-bottom:1px solid var(--line)}
+  .mtab{flex:1;position:relative;padding:.55rem .4rem;border:1.5px solid var(--line);border-radius:.6rem;background:var(--surface-2);font-weight:700;font-size:.85rem;color:var(--ink-2);cursor:pointer;touch-action:manipulation}
+  .mtab[aria-selected="true"]{background:var(--teal);border-color:var(--teal);color:#fff}
+  .tab-dot{position:absolute;top:.3rem;right:.45rem;width:.65rem;height:.65rem;border-radius:50%;background:#d93a3a;box-shadow:0 0 0 2px #fff}
+  .stage{display:block;padding:.6rem}
+  body.pv .nurse{display:none}
+  body:not(.pv) .patient{display:none}
+  .nurse{overflow:visible}
+  .app-bar{height:auto;padding:.5rem .8rem;flex-wrap:wrap;gap:.2rem;border-radius:var(--radius) var(--radius) 0 0}
+  .nurse-body{padding:.6rem}
+  .callbar{flex-wrap:wrap}
+  .callbar .btn-primary{width:100%;justify-content:center}
+  .workspace{display:flex;flex-direction:column}
+  .convo-col{position:sticky;top:3.4rem;z-index:5;box-shadow:0 6px 14px rgba(14,29,34,.14)}
+  .convo-col .col-sub{display:none}
+  .convo{flex:none;height:24vh}
+  .ai-panel.on .ai-text{display:none}
+  .form-grid{grid-template-columns:1fr;overflow:visible}
+  .form-foot{grid-template-columns:1fr}
+  .field{scroll-margin-top:58vh;scroll-margin-bottom:9rem}
+  .q-sub{display:none}
+  .q-th{display:none}
+  .q-row{grid-template-columns:3rem minmax(0,1fr) auto;row-gap:.3rem;padding:.6rem .7rem}
+  .q-row>:nth-child(1),.q-row>:nth-child(2){grid-row:span 2}
+  .q-row>:nth-child(3),.q-row>:nth-child(6){display:none}
+  .q-row>:nth-child(4),.q-row>:nth-child(5){grid-column:3;justify-self:end}
+  .flow{flex-wrap:wrap}
+  .flow li{flex:1 1 45%}
+  .flow li+li::before{display:none}
+  .patient{padding:.3rem 0 1rem}
+  .phone{height:min(74vh,44rem);max-height:none}
+  .modal-back{position:fixed;z-index:60}
+  .m-row{grid-template-columns:5.5rem minmax(0,1fr)}
+  .m-row .chip{grid-column:2;justify-self:start}
+  .m-btns{grid-template-columns:1fr}
+  .foot{position:fixed;left:0;right:0;bottom:0;z-index:40;height:auto;flex-direction:column;align-items:stretch;gap:.35rem;padding:.5rem .7rem calc(.5rem + env(safe-area-inset-bottom));box-shadow:0 -6px 18px rgba(14,29,34,.14)}
+  .disc{font-size:.72rem;text-align:center}
+  .keys{display:none}
+  .touch{display:flex;flex-direction:column;gap:.35rem}
+  .t-hint{margin:0;font-size:.8rem;color:var(--ink-2);text-align:center}
+  .t-btns{display:grid;grid-template-columns:auto auto 1fr;gap:.5rem}
+  .t-btn{min-height:2.9rem;padding:0 .8rem;font-size:.88rem}
+  .t-next{font-size:1.05rem}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brand"><span class="brand-mark" aria-hidden="true"></span><div><strong>Koncept za zVEM / zVEM+</strong> <span class="light">– prototip</span></div></div>
+  <div class="top-right">
+    <div id="saved" class="saved" hidden></div>
+    <span id="autoBadge" class="auto-badge" hidden>Samodejni način</span>
+    <button id="toggle" class="switch" type="button" role="switch" aria-checked="false">
+      <span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span>
+      <span>Pacient brez izbranega zdravnika</span>
+    </button>
+  </div>
+</header>
+
+<nav class="mtabs" aria-label="Pogled">
+  <button type="button" class="mtab" data-view="nurse" aria-selected="true">Medicinska sestra</button>
+  <button type="button" class="mtab" data-view="patient" aria-selected="false">Pacientka (telefon)<span class="tab-dot" id="tabDot" hidden></span></button>
+</nav>
+
+<main class="stage">
+  <section class="nurse" aria-label="Aplikacija medicinske sestre">
+    <div class="app-bar"><span><b>zVEM+</b> – Ambulanta družinske medicine</span><small>Prijavljena: medicinska sestra</small></div>
+    <div class="nurse-body" id="nurseBody"></div>
+  </section>
+
+  <section class="patient" aria-label="Aplikacija pacienta">
+    <div class="phone-cap">Telefon pacientke</div>
+    <div class="phone"><div class="screen" id="screen"></div></div>
+  </section>
+</main>
+
+<footer class="foot">
+  <span class="disc">Prototip – vsi podatki so izmišljeni</span>
+  <div class="keys" id="keys" aria-label="Bližnjice za predstavitev">
+    <button type="button" data-cmd="next"><kbd>Presledek</kbd>/<kbd>→</kbd> naprej</button>
+    <button type="button" data-cmd="reset"><kbd>R</kbd> ponastavi</button>
+    <button type="button" data-cmd="toggle"><kbd>T</kbd> brez zdravnika</button>
+    <button type="button" data-cmd="auto"><kbd>A</kbd> samodejno</button>
+    <button type="button" data-cmd="hide"><kbd>H</kbd> skrij</button>
+    <span class="k-step" id="kStep"></span>
+  </div>
+  <div class="touch" aria-label="Upravljanje predstavitve">
+    <p class="t-hint" id="tHint"></p>
+    <div class="t-btns">
+      <button type="button" class="t-btn" data-cmd="reset">↺ Znova</button>
+      <button type="button" class="t-btn" data-cmd="auto" id="tAuto">▶ Samodejno</button>
+      <button type="button" class="t-btn t-next" data-cmd="next" id="tNext">Naprej →</button>
+    </div>
+  </div>
+</footer>
+
+<div class="sr-only" aria-live="polite" id="live"></div>
+
+<script>
+'use strict';
+
+/* ================= Podatki (vsi izmišljeni) ================= */
+const ICON = {
+  phone:'<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25c1.1.37 2.3.57 3.6.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z"/></svg>',
+  spark:'<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2l1.9 5.6 5.6 1.9-5.6 1.9L12 17l-1.9-5.6-5.6-1.9 5.6-1.9zM19 14l.9 2.6 2.6.9-2.6.9L19 21l-.9-2.6-2.6-.9 2.6-.9z"/></svg>',
+  lock:'<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7 10V7a5 5 0 0 1 10 0v3h1a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1zm2 0h6V7a3 3 0 0 0-6 0z"/></svg>',
+  check:'<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M9.5 16.2 5.3 12l-1.4 1.4 5.6 5.6L20.1 8.4 18.7 7z"/></svg>',
+  alert:'<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2 1 21h22zm1 15h-2v-2h2zm0-4h-2V9h2z"/></svg>',
+  clock:'<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm1 10.4 3.5 2.1-.8 1.3L11 13V6.5h2z"/></svg>',
+  edit:'<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M3 17.2V21h3.8L17.8 9.9l-3.8-3.8zM20.7 7a1 1 0 0 0 0-1.4l-2.3-2.3a1 1 0 0 0-1.4 0l-1.8 1.8 3.8 3.8z"/></svg>',
+  app:'<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7 2h10a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm0 3v13h10V5z"/></svg>',
+  shield:'<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2 4 5v6c0 5.1 3.4 9.8 8 11 4.6-1.2 8-5.9 8-11V5zm-1.2 14.2-3.5-3.5 1.4-1.4 2.1 2.1 4.9-4.9 1.4 1.4z"/></svg>',
+  power:'<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M11 2h2v10h-2zm6.6 3.4 1.4-1.4A9.9 9.9 0 0 1 22 11a10 10 0 1 1-17-7l1.4 1.4A8 8 0 1 0 17.6 5.4z"/></svg>'
+};
+
+const DOC = { normal:'dr. Maja Kovač, ADM Center', none:'Dodatna ambulanta, ZD Center (primer)' };
+
+/* Replike 0–3 potekajo, ko je asistent še izklopljen (se ne zapisujejo). */
+const LINES = [
+  {who:'sestra',  text:'Ambulanta družinske medicine, dober dan.'},
+  {who:'pacient', text:'Dober dan, tukaj Ana Novak.'},
+  {who:'sestra',  text:'Ali se strinjate, da klic obdeluje digitalni asistent, ki pomaga pri vnosu podatkov?'},
+  {who:'pacient', text:'Ja, seveda.'},
+  {who:'sestra',  text:'Kako vam lahko pomagam?'},
+  {who:'pacient', text:'Potrebovala bi nov recept za zdravilo za pritisk, Enap 10 miligramov, jemljem ga enkrat na dan.', fill:['type','drug','dose','qty']},
+  {who:'sestra',  text:'Koliko tablet vam je še ostalo?'},
+  {who:'pacient', text:'Za kakšne tri dni.', fill:['note']},
+  {who:'sestra',  text:'V redu, recept bo pripravljen jutri do poldneva.'}
+];
+const CONSENT_LINE = 3;
+
+const LABELS = {patient:'Pacient', doctor:'Prejemnik', type:'Vrsta zahteve', drug:'Zdravilo', dose:'Odmerjanje', qty:'Količina', note:'Opomba'};
+
+const FIELDS = {
+  type:{value:'Recept', note:''},
+  drug:{value:'Enap 10 mg', note:'iz zgodovine eRecepta'},
+  dose:{value:'1x dnevno', note:''},
+  qty:{value:'1 škatla', note:'predlog asistenta – ni prepričan, preverite'},
+  note:{value:'Zaloga za 3 dni', note:''}
+};
+
+const QUEUE = [
+  {time:'09:05', name:'Luka Kranjc',  detail:'Ortoped – kontrolni pregled kolena', type:'Napotnica',     src:'zvem', prio:'Običajno', status:'Nova'},
+  {time:'08:47', name:'Petra Zupan',  detail:'Podaljšanje bolniškega staleža',    type:'Bolniški list', src:'zvem', prio:'Danes',    status:'V obdelavi'},
+  {time:'08:12', name:'Marko Horvat', detail:'Euthyrox 100 µg · 1 škatla',        type:'Recept',        src:'zvem', prio:'Običajno', status:'Nova'}
+];
+
+const PH_NAME = 'vnese medicinska sestra';
+const PH_OFF  = 'asistent izklopljen';
+const PH_ON   = 'čaka na podatke iz pogovora …';
+
+/* ================= Stanje in časovniki ================= */
+const S = {};
+let noDoctor = false;
+function initState(){
+  Object.assign(S, {step:0, auto:false, convDone:false, nameEntered:false, consent:false, aiOn:false,
+    qtyEdited:false, modalOpen:false, confirmed:false, qty:'2 škatli', prio:'Običajno'});
+}
+
+const $  = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+
+/* Vizualni zamiki: ob hitrem kliku se takoj izvedejo (flush), zato demo nikoli ne obstane. */
+let autoT = null, taskSeq = 0;
+const tasks = new Map();
+const typers = new Set();
+
+function later(fn, ms){
+  const id = ++taskSeq;
+  const h = setTimeout(() => { tasks.delete(id); fn(); }, ms);
+  tasks.set(id, {h, fn, due: performance.now() + ms});
+}
+function runTasks(){
+  let guard = 0;
+  while (tasks.size && guard++ < 300){
+    let best = null;
+    for (const e of tasks) if (!best || e[1].due < best[1].due) best = e;
+    clearTimeout(best[1].h); tasks.delete(best[0]); best[1].fn();
+  }
+}
+function flush(){
+  for (let g = 0; g < 50 && (typers.size || tasks.size); g++){
+    [...typers].forEach(t => t.finish());
+    runTasks();
+  }
+}
+function setAuto(fn, ms){ clearAuto(); autoT = setTimeout(() => { autoT = null; fn(); }, ms); }
+function clearAuto(){ if (autoT){ clearTimeout(autoT); autoT = null; } }
+function cancelAll(){
+  typers.forEach(t => { t.over = true; clearTimeout(t.h); }); typers.clear();
+  tasks.forEach(t => clearTimeout(t.h)); tasks.clear();
+  clearAuto();
+}
+
+function typeText(el, text, ms, done, asValue){
+  const set = s => { if (asValue) el.value = s; else el.textContent = s; };
+  const t = { h:null, over:false, i:0, finish(){
+    if (t.over) return; t.over = true; clearTimeout(t.h); typers.delete(t);
+    set(text); el.classList.remove('typing'); scrollConvo(); if (done) done();
+  }};
+  el.classList.add('typing'); set('');
+  const tick = () => { t.i++; set(text.slice(0, t.i)); scrollConvo(); if (t.i >= text.length) t.finish(); else t.h = setTimeout(tick, ms); };
+  typers.add(t); t.h = setTimeout(tick, ms);
+}
+
+function scrollConvo(){ const c = $('#convo'); if (c) c.scrollTop = c.scrollHeight; }
+function pulse(el, cls){ if (!el) return; el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
+function announce(t){ const l = $('#live'); if (l) l.textContent = t; }
+const fieldEl = k => document.querySelector('.field[data-f="' + k + '"]');
+
+/* Telefon: zavihka Sestra / Pacientka; ob vsakem koraku pokaži, kaj se je spremenilo. */
+const mq = window.matchMedia('(max-width: 900px)');
+const isMobile = () => mq.matches;
+function setView(v){
+  const pv = v === 'patient';
+  const changed = document.body.classList.contains('pv') !== pv;
+  document.body.classList.toggle('pv', pv);
+  $$('.mtab').forEach(b => b.setAttribute('aria-selected', String(b.dataset.view === v)));
+  if (pv){ const d = $('#tabDot'); if (d) d.hidden = true; }
+  if (changed && isMobile()) window.scrollTo(0, 0);
+}
+function mFocus(el){
+  if (!isMobile() || !el || document.body.classList.contains('pv')) return;
+  el.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+/* ================= Predloge (HTML) ================= */
+function fieldHTML(k, label, cls){
+  const id = 'f-' + k;
+  const ph = k === 'patient' ? PH_NAME : PH_OFF;
+  let val;
+  if (k === 'patient')  val = '<input id="' + id + '" class="f-val" type="text" placeholder="' + ph + '" autocomplete="off" aria-labelledby="' + id + '-l">';
+  else if (k === 'qty') val = '<input id="' + id + '" class="f-val" type="text" readonly placeholder="' + ph + '" autocomplete="off" aria-labelledby="' + id + '-l">';
+  else                  val = '<div id="' + id + '" class="f-val" role="textbox" aria-readonly="true" aria-labelledby="' + id + '-l" data-ph="' + ph + '"></div>';
+  const chip = k === 'patient' ? '<span class="chip lock">' + ICON.edit + 'ročni vnos</span>' : '';
+  return '<div class="field empty ' + (cls || '') + '" data-f="' + k + '"><div class="f-head"><span class="f-label" id="' + id + '-l">' + label +
+    '</span><span class="chips">' + chip + '</span></div>' + val + '<div class="f-note"></div></div>';
+}
+
+const srcBadge = s => s === 'telefon'
+  ? '<span class="src tel">' + ICON.phone + 'telefon</span>'
+  : '<span class="src zvem">' + ICON.app + 'zVEM</span>';
+const prioBadge = p => '<span class="prio-b ' + ({'Običajno':'p-obi','Danes':'p-dan','Nujno':'p-nuj'})[p] + '">' + esc(p) + '</span>';
+
+function rowHTML(r){
+  return '<div class="q-row ' + (r.cls || '') + '" role="row"' + (r.id ? ' id="' + r.id + '"' : '') + '>' +
+    '<span role="cell" class="q-time">' + r.time + '</span>' +
+    '<span role="cell" class="q-name"><b>' + esc(r.name) + '</b><small class="js-row-detail">' + esc(r.detail) + '</small></span>' +
+    '<span role="cell">' + esc(r.type) + '</span>' +
+    '<span role="cell">' + srcBadge(r.src) + '</span>' +
+    '<span role="cell">' + prioBadge(r.prio) + '</span>' +
+    '<span role="cell" class="q-status">' + esc(r.status) + '</span></div>';
+}
+
+function nurseBodyHTML(){
+  return '' +
+  '<div id="callbar" class="callbar incoming">' +
+    '<span class="ring" aria-hidden="true">' + ICON.phone + '</span>' +
+    '<div class="cb-text"><div class="cb-title">Dohodni klic · 041 555 218</div><div class="cb-sub">Digitalni asistent je izklopljen. Vklopi ga lahko samo medicinska sestra, ko pacient soglaša.</div></div>' +
+    '<button class="btn-primary" type="button" data-action="accept">' + ICON.phone + 'Sprejmi klic</button>' +
+  '</div>' +
+
+  '<div id="workspace" class="workspace" hidden>' +
+    '<section class="col convo-col" aria-labelledby="convTitle">' +
+      '<div class="col-head"><h2 id="convTitle">Pogovor</h2><span id="callState" class="call-state live"><span class="dot"></span>Klic v teku · 041 555 218</span></div>' +
+      '<p class="col-sub">Pred soglasjem se pogovor ne zapisuje. V zahtevo gre le izpolnjen obrazec, ne transkript.</p>' +
+      '<div class="ai-panel" id="aiPanel">' +
+        '<div class="ai-row"><span class="ai-title">' + ICON.spark + 'Digitalni asistent</span><span class="ai-pill" id="aiPill">Izklopljen</span></div>' +
+        '<p class="ai-text" id="aiText">Najprej ročno vnesite ime in vprašajte pacienta za soglasje.</p>' +
+        '<div class="ai-btns" id="aiBtns">' +
+          '<button class="btn-ai" id="aiBtn" type="button" data-action="ai-on" disabled>' + ICON.power + 'Vklopi asistenta</button>' +
+          '<button class="btn-ghost" type="button" data-action="ai-no">Pacient ne soglaša</button>' +
+        '</div>' +
+      '</div>' +
+      '<div id="convo" class="convo"></div>' +
+    '</section>' +
+    '<section class="col form-col" id="formCard" aria-labelledby="formTitle">' +
+      '<div class="col-head"><h2 id="formTitle">Zahteva (izpolnjuje asistent)</h2><span id="draftPill" class="draft-pill">Osnutek – ni shranjeno</span></div>' +
+      '<p class="col-sub">Asistent samo predlaga vnose. Ne določa nujnosti ali zdravstvenega stanja.</p>' +
+      '<div class="form-grid">' +
+        fieldHTML('patient','Pacient','full') +
+        fieldHTML('doctor','Izbrani zdravnik / prejemnik','full') +
+        fieldHTML('type','Vrsta zahteve') +
+        fieldHTML('drug','Zdravilo') +
+        fieldHTML('dose','Odmerjanje') +
+        fieldHTML('qty','Količina') +
+        fieldHTML('note','Opomba','full') +
+      '</div>' +
+      '<div class="form-foot">' +
+        '<div class="field prio" data-f="prio">' +
+          '<div class="f-head"><label class="f-label" for="prio">Prioriteta</label><span class="chips"><span class="chip lock">' + ICON.lock + 'določi med. sestra</span></span></div>' +
+          '<select id="prio"><option value="" disabled selected>Določi medicinska sestra</option><option value="Običajno">Običajno</option><option value="Danes">Danes</option><option value="Nujno">Nujno</option></select>' +
+          '<div class="rule rule-nurse">' + ICON.lock + '<span><b>Asistent tega polja nikoli ne izpolnjuje.</b> Prioriteto določi samo medicinska sestra.</span></div>' +
+        '</div>' +
+        '<div class="confirm-wrap">' +
+          '<div class="rule rule-safe">' + ICON.shield + '<b>Nič ne vstopi v sistem brez vaše potrditve.</b></div>' +
+          '<button id="confirmBtn" class="btn-confirm" type="button" data-action="confirm" disabled>' + ICON.check + 'Potrdi zahtevo</button>' +
+          '<div id="confirmHint" class="confirm-hint"></div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="stamp" aria-hidden="true"><span>' + ICON.check + 'Potrjeno</span></div>' +
+    '</section>' +
+  '</div>' +
+
+  '<section id="queue" class="queue" aria-labelledby="qTitle">' +
+    '<div class="q-head"><h2 id="qTitle">Čakalna vrsta zahtev</h2><span class="q-count" id="qCount">3 zahteve</span><span class="q-sub">Spletne (zVEM) in telefonske zahteve v isti vrsti</span></div>' +
+    '<div class="q-table" role="table" aria-label="Čakalna vrsta zahtev">' +
+      '<div class="q-row q-th" role="row"><span role="columnheader">Čas</span><span role="columnheader">Pacient</span><span role="columnheader">Vrsta</span><span role="columnheader">Vir</span><span role="columnheader">Prioriteta</span><span role="columnheader">Status</span></div>' +
+      '<div id="qBody" role="rowgroup">' + QUEUE.map(rowHTML).join('') + '</div>' +
+    '</div>' +
+    '<p class="flow-title">Kako deluje koncept</p>' +
+    '<ol class="flow"><li><b>1</b>Sestra vnese ime</li><li><b>2</b>Pacient soglaša</li><li><b>3</b>Asistent predlaga vnose</li><li><b>4</b>Sestra preveri in potrdi</li><li><b>5</b>Ista vrsta, pacient vidi status</li></ol>' +
+  '</section>' +
+
+  '<div class="modal-back" id="safeModal" hidden>' +
+    '<div class="modal" role="dialog" aria-modal="true" aria-labelledby="safeTitle" tabindex="-1">' +
+      '<div class="m-head"><span class="m-icon" aria-hidden="true">' + ICON.shield + '</span><div><h2 id="safeTitle">Varnostni pregled pred vnosom</h2>' +
+        '<p>Še enkrat preglejte vse podatke. Po potrditvi gre zahteva v čakalno vrsto, pacientka pa prejme obvestilo.</p></div></div>' +
+      '<div class="m-sum" id="safeSum"></div>' +
+      '<label class="m-check" id="safeCheckRow"><input type="checkbox" id="safeCheck"><span>Podatke sem preverila in so pravilni.</span></label>' +
+      '<p class="m-q">Ali ste prepričani, da želite vnesti podatke in potrditi zahtevo?</p>' +
+      '<div class="m-btns"><button class="btn-ghost" type="button" data-action="safe-back">Nazaj na urejanje</button>' +
+        '<button class="btn-confirm" id="safeOk" type="button" data-action="safe-ok" disabled>' + ICON.check + 'Da, vnesi in potrdi</button></div>' +
+    '</div>' +
+  '</div>';
+}
+
+function phoneHTML(){
+  return '' +
+  '<div class="p-status"><span class="p-time" id="pTime">9:41</span><span class="notch" aria-hidden="true"></span><span class="p-icons" aria-hidden="true"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="batt"></span></span></div>' +
+  '<div class="p-appbar"><span class="p-app">zVEM – Pacient</span><span class="p-avatar" aria-hidden="true">AN</span></div>' +
+  '<div class="p-content">' +
+    '<div class="p-view p-home" id="pHome">' +
+      '<p class="p-hello">Pozdravljeni, Ana</p>' +
+      '<div class="p-contact" id="pContact"><span class="p-cl js-doc-label" data-normal="Vaš izbrani zdravnik">Vaš izbrani zdravnik</span><b class="js-doc-value">' + DOC.normal + '</b></div>' +
+      '<h3 class="p-h">Moje zahteve</h3>' +
+      '<ul class="p-list" id="pList">' +
+        '<li class="p-item"><div><b>Napotnica – dermatolog</b><small>2. 9. 2026 · zVEM</small></div><span class="p-st closed">Zaključeno</span></li>' +
+      '</ul>' +
+    '</div>' +
+    '<div class="p-view p-detail" id="pDetail" aria-hidden="true">' +
+      '<button class="p-back" type="button" data-action="back">‹ Moje zahteve</button>' +
+      '<div class="p-card">' +
+        '<div class="p-card-top"><h3>Zahteva za recept</h3><span class="p-st recv" id="pPill">V obdelavi</span></div>' +
+        '<p class="p-big">Enap 10 mg</p>' +
+        '<dl class="p-dl">' +
+          '<div><dt>Količina</dt><dd id="pQty">2 škatli · 1x dnevno</dd></div>' +
+          '<div><dt>Oddano</dt><dd>danes ob 9:41, po telefonu</dd></div>' +
+          '<div><dt class="js-doc-label" data-normal="Prejemnik">Prejemnik</dt><dd class="js-doc-value">' + DOC.normal + '</dd></div>' +
+        '</dl>' +
+      '</div>' +
+      '<ol class="p-steps" id="pSteps">' +
+        '<li class="done"><b>Prejeto</b><small>danes ob 9:41</small></li>' +
+        '<li class="active"><b>V obdelavi</b><small>ambulanta pregleduje zahtevo</small></li>' +
+        '<li><b id="pReadyTitle">Recept pripravljen</b><small id="pReadyNote">pričakovano: jutri do 12:00</small></li>' +
+      '</ol>' +
+    '</div>' +
+  '</div>' +
+  '<div class="p-112" role="note">' + ICON.alert + '<span>Če je stanje nujno, pokličite <b>112</b>.</span></div>' +
+  '<div class="p-push" id="pPush" role="status" aria-live="polite"><span class="p-push-icon" aria-hidden="true">' + ICON.check + '</span><div><small>zVEM · zdaj</small><b id="pPushText"></b></div></div>';
+}
+
+/* ================= Koraki =================
+   kind 'line' = replika (se nadaljuje sama), 'act' = dejanje sestre ali prezenterja (čaka na klik).
+   wait = premor pred tem korakom v samodejnem načinu. */
+const STEPS = [
+  {kind:'act',  run:acceptCall,       hint:'sprejmi klic', wait:700},
+  {kind:'line', run:() => sayLine(1)},
+  {kind:'act',  run:nurseTypeName,    hint:'sestra ročno vnese ime', wait:800},
+  {kind:'line', run:() => sayLine(2)},
+  {kind:'line', run:() => sayLine(3)},
+  {kind:'act',  run:enableAI,         hint:'sestra vklopi asistenta', wait:1200},
+  {kind:'line', run:() => sayLine(4)},
+  {kind:'line', run:() => sayLine(5)},
+  {kind:'line', run:() => sayLine(6)},
+  {kind:'line', run:() => sayLine(7)},
+  {kind:'line', run:() => sayLine(8)},
+  {kind:'act',  run:nurseEditQty,     hint:'sestra popravi količino', wait:1500},
+  {kind:'act',  run:nurseSetPriority, hint:'sestra določi prioriteto', wait:1500},
+  {kind:'act',  run:openSafety,       hint:'sestra klikne Potrdi zahtevo', wait:1500},
+  {kind:'act',  run:safetyConfirm,    hint:'varnostni pregled: sestra še enkrat potrdi', wait:2600},
+  {kind:'act',  run:openPhoneCard,    hint:'odpri zahtevo na telefonu', wait:3000},
+  {kind:'act',  run:markReady,        hint:'recept pripravljen', wait:3000}
+];
+const I_QTY = 11, I_SAFE = 13, I_SAFE_OK = 14, I_CARD = 15;
+
+function next(){
+  flush(); clearAuto();
+  if (S.step >= STEPS.length){ pulse($('#keys'), 'nudge'); pulse($('#tNext'), 'nudge'); return; }
+  if (isMobile()) setView(S.step >= I_CARD ? 'patient' : 'nurse');
+  const st = STEPS[S.step];
+  S.step++;
+  st.run();
+  updateKeys();
+}
+
+/* Pokliče se, ko se korak vizualno konča. Replike tečejo same, dejanja čakajo na klik (razen v samodejnem načinu). */
+function stepDone(ms, force){
+  const nx = STEPS[S.step];
+  if (!nx){ if (S.auto){ S.auto = false; updateAutoBadge(); } return; }
+  if (force || nx.kind === 'line') setAuto(next, ms);
+  else if (S.auto) setAuto(next, Math.max(ms, nx.wait || 2000));
+}
+
+function acceptCall(){
+  $('#callbar').hidden = true;
+  $('#queue').hidden = true;
+  $('#workspace').hidden = false;
+  setCallPill(true);
+  updateConfirm();
+  if (isMobile()) window.scrollTo(0, 0);
+  announce('Klic sprejet. Asistent je izklopljen.');
+  sayLine(0);
+}
+
+function sayLine(i){
+  const L = LINES[i], c = $('#convo');
+  const off = !S.aiOn;
+  const m = document.createElement('div');
+  m.className = 'msg ' + L.who + (off ? ' off' : '');
+  m.innerHTML = '<div class="who">' + (L.who === 'sestra' ? 'Medicinska sestra' : 'Pacientka') + '</div><div class="bubble"></div>' +
+    (off ? '<div class="off-tag">' + ICON.lock + 'ni zapisano – asistent izklopljen</div>' : '');
+  c.appendChild(m);
+  typeText(m.querySelector('.bubble'), L.text, 22, () => lineDone(i, m));
+}
+
+function lineDone(i, m){
+  const L = LINES[i];
+  if (L.fill && S.aiOn){
+    L.fill.forEach((k, n) => later(() => fillField(k), 200 + n * 380));
+    later(() => addFillTag(m, L.fill), 200 + L.fill.length * 380);
+  }
+  if (i === CONSENT_LINE){ S.consent = true; renderAI(); }
+  if (i === LINES.length - 1) later(() => { callEnded(); stepDone(1500); }, 500);
+  else stepDone(1500);
+}
+
+function addFillTag(m, keys){
+  const t = document.createElement('div');
+  t.className = 'fill-tag';
+  t.innerHTML = ICON.spark + '<span>v obrazec: ' + keys.map(k => LABELS[k]).join(', ') + '</span>';
+  m.appendChild(t); scrollConvo();
+}
+
+function callEnded(){
+  S.convDone = true;
+  const cs = $('#callState');
+  cs.className = 'call-state ended';
+  cs.innerHTML = ICON.phone + 'Klic zaključen';
+  setCallPill(false);
+  updateConfirm();
+}
+
+function setCallPill(on){
+  const t = $('#pTime'); if (!t) return;
+  t.classList.toggle('call', on);
+  t.innerHTML = on ? ICON.phone + '9:41' : '9:41';
+}
+
+/* --- Ročni vnos imena --- */
+function nurseTypeName(){
+  const f = fieldEl('patient'), inp = $('#f-patient');
+  mFocus(f);
+  if (S.nameEntered){ pulse(f, 'flash'); stepDone(1200); return; }
+  f.classList.add('focus');
+  later(() => typeText(inp, 'Ana Novak', 110, () => { markNameEntered(); f.classList.remove('focus'); stepDone(1200); }, true), 400);
+}
+
+function markNameEntered(){
+  const f = fieldEl('patient');
+  if (!f || S.nameEntered) return;
+  S.nameEntered = true;
+  f.classList.remove('empty'); f.classList.add('filled', 'edited');
+  setChips(f, 'manual');
+  f.querySelector('.f-note').textContent = 'ročni vnos medicinske sestre – brez asistenta';
+  pulse(f, 'flash');
+  renderAI();
+}
+
+/* --- Asistent: vklop samo s klikom sestre po soglasju --- */
+function renderAI(){
+  const p = $('#aiPanel'); if (!p) return;
+  const b = $('#aiBtn'), txt = $('#aiText');
+  p.classList.toggle('on', S.aiOn);
+  $('#aiPill').textContent = S.aiOn ? 'Vklopljen' : 'Izklopljen';
+  if (S.aiOn){
+    $('#aiBtns').hidden = true;
+    txt.innerHTML = '<b>Soglasje pacientke: da</b> · zabeleženo ob 9:41. Asistent zdaj predlaga vnose v obrazec.';
+  } else {
+    b.disabled = !S.consent;
+    b.classList.toggle('ready', S.consent);
+    txt.textContent = S.consent ? 'Pacientka je soglašala. Asistenta vklopite z gumbom.'
+      : S.nameEntered ? 'Vprašajte pacienta za soglasje. Asistent do takrat ne posluša.'
+      : 'Najprej ročno vnesite ime in vprašajte pacienta za soglasje.';
+  }
+}
+
+function enableAI(){
+  const b = $('#aiBtn');
+  b.disabled = false; b.classList.add('pressed');
+  later(() => {
+    S.consent = true; S.aiOn = true;
+    renderAI();
+    pulse($('#aiPanel'), 'flash');
+    $$('.form-grid .f-val').forEach(el => {
+      if (el.id === 'f-patient') return;
+      if (el.tagName === 'INPUT') el.placeholder = PH_ON; else el.dataset.ph = PH_ON;
+    });
+    const d = document.createElement('div');
+    d.className = 'ai-divider';
+    d.innerHTML = '<span>' + ICON.spark + 'Asistent vklopljen · soglasje 9:41</span>';
+    $('#convo').appendChild(d); scrollConvo();
+    announce('Asistent vklopljen');
+    later(() => { fillField('doctor'); stepDone(1500); }, 700);
+  }, 300);
+}
+
+function fieldValue(k){
+  if (k === 'doctor') return noDoctor ? 'Pacient nima izbranega zdravnika → ' + DOC.none : DOC.normal;
+  return FIELDS[k].value;
+}
+function fieldNote(k){
+  if (k === 'doctor') return noDoctor ? 'nadležni zdravstveni dom po stalnem prebivališču' : 'iz evidence izbranih zdravnikov';
+  return FIELDS[k].note;
+}
+
+function setChips(f, kind){
+  const c = f.querySelector('.chips');
+  c.innerHTML = {
+    ai: '<span class="chip ai">' + ICON.spark + 'predlog asistenta</span>',
+    warn: '<span class="chip warn">' + ICON.alert + 'Preveri</span>',
+    manual: '<span class="chip rn">' + ICON.edit + 'vnesla med. sestra</span>',
+    edited: '<span class="chip rn">' + ICON.edit + 'popravila med. sestra</span>',
+    prio: '<span class="chip rn">' + ICON.check + 'določila med. sestra</span>'
+  }[kind];
+}
+
+function fillField(k){
+  const f = fieldEl(k); if (!f || !S.aiOn) return;
+  const ve = $('#f-' + k);
+  if (k === 'qty'){
+    if (S.qtyEdited) return;
+    ve.value = fieldValue(k); ve.readOnly = false;
+  } else ve.textContent = fieldValue(k);
+  f.querySelector('.f-note').textContent = fieldNote(k);
+  f.classList.remove('empty'); f.classList.add('filled');
+  if (k === 'qty') f.classList.add('warn');
+  if (k === 'doctor') f.classList.toggle('route', noDoctor);
+  setChips(f, k === 'qty' ? 'warn' : 'ai');
+  pulse(f, 'flash');
+  mFocus(f);
+}
+
+function nurseEditQty(){
+  const f = fieldEl('qty'), inp = $('#f-qty');
+  if (!f.classList.contains('filled')) fillField('qty');
+  mFocus(f);
+  if (S.qtyEdited){ pulse(f, 'flash'); stepDone(800); return; }
+  f.classList.add('focus');
+  later(() => typeText(inp, '2 škatli', 110, () => { markQtyEdited(); f.classList.remove('focus'); stepDone(1200); }, true), 450);
+}
+
+function markQtyEdited(){
+  const f = fieldEl('qty');
+  if (!f || S.qtyEdited) return;
+  S.qtyEdited = true;
+  f.classList.remove('warn', 'empty'); f.classList.add('edited', 'filled');
+  setChips(f, 'edited');
+  f.querySelector('.f-note').textContent = 'prvotni predlog asistenta: 1 škatla';
+  pulse(f, 'flash');
+}
+
+function nurseSetPriority(){
+  const f = fieldEl('prio'), sel = $('#prio');
+  mFocus(f);
+  if (sel.value){ pulse(f, 'flash'); stepDone(800); return; }
+  f.classList.add('focus');
+  later(() => { sel.value = 'Običajno'; onPrio(); f.classList.remove('focus'); stepDone(1200); }, 600);
+}
+
+function onPrio(){
+  const f = fieldEl('prio');
+  f.classList.add('chosen');
+  setChips(f, 'prio');
+  pulse(f, 'flash');
+  updateConfirm();
+}
+
+function updateConfirm(){
+  const b = $('#confirmBtn'), h = $('#confirmHint'), sel = $('#prio');
+  if (!b) return;
+  const ok = S.convDone && !!sel.value && !S.confirmed && !S.modalOpen;
+  b.disabled = !ok;
+  b.classList.toggle('ready', ok);
+  h.textContent = S.confirmed ? 'Zahteva je potrjena.'
+    : S.modalOpen ? 'Varnostni pregled …'
+    : !S.convDone ? 'Pogovor še poteka …'
+    : !sel.value ? 'Za potrditev določite prioriteto.'
+    : 'Sledi še varnostni pregled.';
+}
+
+/* --- Varnostni pregled (drugi korak potrditve) --- */
+function summaryRows(){
+  const txt = id => { const el = $('#' + id); return (el.tagName === 'INPUT' ? el.value : el.textContent).trim(); };
+  const srcOf = k => {
+    const f = fieldEl(k);
+    if (f.classList.contains('warn')) return ['warn', 'Preveri – predlog asistenta'];
+    if (f.classList.contains('edited')) return ['rn', k === 'patient' ? 'vnesla sestra' : 'popravila sestra'];
+    if (f.classList.contains('filled')) return ['ai', 'predlog asistenta'];
+    return ['empty', 'ni podatka'];
+  };
+  const rows = ['patient','doctor','type','drug','dose','qty','note'].map(k => {
+    const label = k === 'doctor' ? 'Prejemnik' : LABELS[k];
+    return {label, value: txt('f-' + k) || '—', src: srcOf(k)};
+  });
+  rows.push({label:'Prioriteta', value: $('#prio').value || '—', src:['rn', 'določila sestra']});
+  return rows;
+}
+
+function showModal(){
+  const rows = summaryRows();
+  $('#safeSum').innerHTML = rows.map(r =>
+    '<div class="m-row ' + (r.src[0] === 'warn' ? 'm-warn' : '') + '"><span class="m-l">' + esc(r.label) + '</span><span class="m-v">' + esc(r.value) +
+    '</span><span class="chip ' + (r.src[0] === 'empty' ? 'lock' : r.src[0]) + '">' + esc(r.src[1]) + '</span></div>').join('');
+  const cb = $('#safeCheck'); cb.checked = false; cb.disabled = false;
+  $('#safeOk').disabled = true; $('#safeOk').classList.remove('pressed', 'ready');
+  $('#safeModal').hidden = false;
+  S.modalOpen = true;
+  updateConfirm();
+  $('#safeModal .modal').focus();
+  announce('Varnostni pregled pred vnosom');
+}
+
+function hideModal(){
+  const m = $('#safeModal'); if (m) m.hidden = true;
+  S.modalOpen = false;
+  if (document.activeElement) document.activeElement.blur();
+  updateConfirm();
+}
+
+function onSafeCheck(){
+  const ok = $('#safeCheck').checked;
+  const b = $('#safeOk');
+  b.disabled = !ok; b.classList.toggle('ready', ok);
+  pulse($('#safeCheckRow'), 'flash');
+}
+
+function openSafety(){
+  const sel = $('#prio');
+  if (!sel.value){ sel.value = 'Običajno'; onPrio(); }
+  const b = $('#confirmBtn');
+  b.classList.add('pressed');
+  later(() => { b.classList.remove('pressed'); showModal(); stepDone(0); }, 250);
+}
+
+function safetyConfirm(){
+  if (!S.modalOpen) showModal();
+  const cb = $('#safeCheck'), row = $('#safeCheckRow');
+  const go = () => {
+    $('#safeOk').classList.add('pressed');
+    later(() => { hideModal(); confirmRequest(); }, 400);
+  };
+  if (cb.checked){ go(); return; }
+  row.classList.add('focus');
+  later(() => { cb.checked = true; onSafeCheck(); row.classList.remove('focus'); later(go, 800); }, 500);
+}
+
+function newDetail(){
+  return 'Enap 10 mg · ' + S.qty + ' · 1x dnevno' + (noDoctor ? ' · za: ' + DOC.none : '');
+}
+
+function confirmRequest(){
+  const sel = $('#prio');
+  S.qty = ($('#f-qty').value || '').trim() || '2 škatli';
+  S.prio = sel.value || 'Običajno';
+  S.confirmed = true;
+  $('#f-qty').readOnly = true; $('#f-patient').readOnly = true;
+  sel.disabled = true;
+  updateConfirm();
+  const p = $('#draftPill'); p.textContent = 'Potrjeno'; p.classList.add('ok');
+  later(() => $('#formCard').classList.add('confirmed'), 150);
+  later(showQueueWithNew, 1300);
+  later(() => { addPhoneItem(); showPush('Vaša zahteva za recept je prejeta'); }, 1500);
+  showSaved();
+  announce('Zahteva potrjena in dodana v čakalno vrsto');
+  stepDone(2800, true); // kartica na telefonu se odpre sama
+}
+
+function showQueueWithNew(){
+  $('#workspace').hidden = true;
+  const cb = $('#callbar');
+  cb.className = 'callbar confirmed';
+  cb.innerHTML = '<span class="ring" aria-hidden="true">' + ICON.check + '</span>' +
+    '<div class="cb-text"><div class="cb-title">Zahteva potrjena in dodana v čakalno vrsto</div><div class="cb-sub">Ana Novak · Recept · vir: telefon · potrdila medicinska sestra</div></div>';
+  cb.hidden = false;
+  $('#queue').hidden = false;
+  if (isMobile() && !document.body.classList.contains('pv')) window.scrollTo({top:0, behavior:'smooth'});
+  if (!$('#newRow')){
+    $('#qBody').insertAdjacentHTML('afterbegin', rowHTML({id:'newRow', time:'09:41', name:'Ana Novak', detail:newDetail(), type:'Recept', src:'telefon', prio:S.prio, status:'Nova', cls:'row-new'}));
+    $('#qCount').textContent = '4 zahteve';
+  }
+}
+
+function showSaved(){
+  const s = $('#saved');
+  s.innerHTML = ICON.clock + '<span>Prihranjen čas vnosa: <b>~2 min</b></span>';
+  s.hidden = false;
+}
+
+function addPhoneItem(){
+  if ($('#pItemNew')) return;
+  $('#pList').insertAdjacentHTML('afterbegin',
+    '<li class="p-item new" id="pItemNew" data-action="open-req" tabindex="0" role="button" aria-label="Odpri zahtevo za recept"><div><b>Recept – Enap 10 mg</b><small>danes · po telefonu</small></div><span class="p-st recv" id="pItemSt">Prejeto</span></li>');
+}
+
+function showPush(text){
+  $('#pPushText').textContent = text; $('#pPush').classList.add('show');
+  if (isMobile() && !document.body.classList.contains('pv')) $('#tabDot').hidden = false;
+}
+function hidePush(){ const p = $('#pPush'); if (p) p.classList.remove('show'); }
+
+function openPhoneCard(){
+  hidePush();
+  addPhoneItem();
+  $('#pQty').textContent = S.qty + ' · 1x dnevno';
+  const d = $('#pDetail');
+  d.classList.add('open'); d.setAttribute('aria-hidden', 'false');
+  announce('Pacientka vidi status zahteve');
+  stepDone(0);
+}
+
+function markReady(){
+  if (!$('#pDetail').classList.contains('open')) openPhoneCard();
+  const li = $('#pSteps').children;
+  li[1].className = 'done';
+  li[2].className = 'done final';
+  $('#pReadyTitle').textContent = 'Recept pripravljen – na voljo v lekarni';
+  $('#pReadyNote').textContent = 'prevzem s kartico zdravstvenega zavarovanja';
+  const pill = $('#pPill'); pill.textContent = 'Pripravljeno'; pill.className = 'p-st ready';
+  const st = $('#pItemSt'); if (st){ st.textContent = 'Pripravljeno'; st.className = 'p-st ready'; }
+  const qs = $('#newRow .q-status'); if (qs){ qs.textContent = 'Izdano'; qs.classList.add('done'); }
+  showPush('Recept je pripravljen – na voljo v lekarni');
+  later(hidePush, 3200);
+  announce('Recept pripravljen');
+  stepDone(0);
+}
+
+/* ================= Prekidač, samodejni način, ponastavitev ================= */
+function renderDoc(withFlash){
+  $('#toggle').setAttribute('aria-checked', String(noDoctor));
+  const f = fieldEl('doctor');
+  if (f && f.classList.contains('filled')){
+    $('#f-doctor').textContent = fieldValue('doctor');
+    f.querySelector('.f-note').textContent = fieldNote('doctor');
+    f.classList.toggle('route', noDoctor);
+    if (withFlash) pulse(f, 'flash');
+  }
+  $$('.js-doc-label').forEach(el => el.textContent = noDoctor ? 'Vaš kontakt' : el.dataset.normal);
+  $$('.js-doc-value').forEach(el => el.textContent = noDoctor ? DOC.none : DOC.normal);
+  const r = $('#newRow .js-row-detail'); if (r) r.textContent = newDetail();
+  if (S.modalOpen) showModal();
+  if (withFlash) pulse($('#pContact'), 'flash');
+}
+
+function toggleDoc(){
+  noDoctor = !noDoctor;
+  renderDoc(true);
+  announce(noDoctor ? 'Pacient brez izbranega zdravnika: vklopljeno' : 'Pacient brez izbranega zdravnika: izklopljeno');
+}
+
+function toggleAuto(){
+  if (!S.auto && S.step >= STEPS.length) reset();
+  S.auto = !S.auto;
+  updateAutoBadge();
+  const nx = STEPS[S.step];
+  if (S.auto){
+    if (!autoT && !typers.size) setAuto(next, nx && nx.wait ? Math.min(nx.wait, 1500) : 1200);
+  } else if (nx && nx.kind === 'act' && S.step !== I_CARD){
+    clearAuto();
+  }
+}
+
+function updateAutoBadge(){
+  $('#autoBadge').hidden = !S.auto;
+  $('#tAuto').textContent = S.auto ? '❚❚ Ustavi' : '▶ Samodejno';
+}
+function updateKeys(){
+  const nx = STEPS[S.step];
+  const h = nx ? (nx.hint || 'naslednja replika') : 'konec – R za ponovitev';
+  $('#kStep').textContent = 'Korak ' + S.step + '/' + STEPS.length + ' · naprej: ' + h;
+  $('#tHint').textContent = 'Korak ' + S.step + '/' + STEPS.length + ' · ' + (nx ? 'naslednje: ' + h : 'konec – za ponovitev tapnite Znova');
+}
+
+function reset(){
+  cancelAll();
+  initState();
+  $('#nurseBody').innerHTML = nurseBodyHTML();
+  $('#screen').innerHTML = phoneHTML();
+  $('#saved').hidden = true;
+  setView('nurse');
+  $('#tabDot').hidden = true;
+  renderDoc(false);
+  updateKeys();
+  updateAutoBadge();
+  announce('Predstavitev ponastavljena');
+}
+
+/* Ročni klik/vnos prezenterja: preskoči na ustrezen korak. */
+function jumpTo(i){ flush(); clearAuto(); S.step = i; next(); }
+
+function safetyBack(){
+  if (!S.modalOpen || S.step !== I_SAFE_OK) return;
+  cancelAll();
+  hideModal();
+  S.step = I_SAFE;
+  updateKeys();
+}
+
+/* ================= Dogodki ================= */
+document.addEventListener('click', e => {
+  const btn = e.target.closest('button');
+  if (btn) btn.blur();
+  if (e.target.closest('#toggle')){ toggleDoc(); return; }
+  const c = e.target.closest('[data-cmd]');
+  if (c){
+    const cmd = c.dataset.cmd;
+    if (cmd === 'next') next();
+    else if (cmd === 'reset') reset();
+    else if (cmd === 'toggle') toggleDoc();
+    else if (cmd === 'auto') toggleAuto();
+    else if (cmd === 'hide') $('#keys').hidden = true;
+    return;
+  }
+  const tab = e.target.closest('[data-view]');
+  if (tab){ setView(tab.dataset.view); return; }
+  const a = e.target.closest('[data-action]');
+  if (!a) return;
+  const act = a.dataset.action;
+  if (act === 'accept' && S.step === 0) next();
+  else if (act === 'ai-on'){ if (!a.disabled && S.step === 5) next(); }
+  else if (act === 'ai-no'){
+    const t = $('#aiText');
+    if (t && !S.aiOn) t.textContent = 'Brez soglasja asistent ostane izklopljen – sestra zahtevo izpolni ročno (v prototipu ni prikazano).';
+  }
+  else if (act === 'confirm'){
+    if (a.disabled || S.step < I_QTY || S.step > I_SAFE) return;
+    jumpTo(I_SAFE);              // sestra je sama izbrala/popravila, zato skočimo na potrditev
+  }
+  else if (act === 'safe-back') safetyBack();
+  else if (act === 'safe-ok'){ if (!a.disabled && S.step === I_SAFE_OK) jumpTo(I_SAFE_OK); }
+  else if (act === 'open-req'){ if (S.step === I_CARD) next(); else if (S.confirmed) { hidePush(); const d = $('#pDetail'); d.classList.add('open'); d.setAttribute('aria-hidden', 'false'); } }
+  else if (act === 'back'){ const d = $('#pDetail'); d.classList.remove('open'); d.setAttribute('aria-hidden', 'true'); }
+});
+
+document.addEventListener('change', e => {
+  if (e.target.id === 'prio') onPrio();
+  else if (e.target.id === 'safeCheck'){ onSafeCheck(); e.target.blur(); }
+});
+document.addEventListener('input', e => {
+  if (S.confirmed) return;
+  if (e.target.id === 'f-qty') markQtyEdited();
+  else if (e.target.id === 'f-patient') markNameEntered();
+});
+
+document.addEventListener('keydown', e => {
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  const tag = e.target.tagName;
+  if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA'){
+    if (e.key === 'Escape') e.target.blur();
+    return;
+  }
+  const k = e.key;
+  if (k === ' ' || k === 'ArrowRight' || k === 'PageDown'){
+    e.preventDefault();
+    if (!e.repeat) next();
+  } else if (k === 'Escape'){ safetyBack(); }
+  else if (k === 'Enter' && e.target.dataset && e.target.dataset.action === 'open-req'){
+    e.preventDefault(); e.target.click();
+  } else if (k === 'r' || k === 'R'){ reset(); }
+  else if (k === 't' || k === 'T'){ toggleDoc(); }
+  else if (k === 'a' || k === 'A'){ toggleAuto(); }
+  else if (k === 'h' || k === 'H'){ $('#keys').hidden = !$('#keys').hidden; }
+});
+
+reset();
+</script>
+</body>
+</html>
